@@ -11,30 +11,22 @@ namespace ToDoListWebAPI
     public class WebApi
     {
         private readonly ITodoRepository _todoRepository;
-        //private readonly ILogger<WebApi> _logger;
+        private readonly ILogger<WebApi> _logger;
 
-        public WebApi(ITodoRepository todoRepository)
+        public WebApi(ITodoRepository todoRepository, ILogger<WebApi> logger)
         {
             _todoRepository = todoRepository ?? throw new ArgumentNullException(nameof(todoRepository));
-            //_logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        [Function("GetAll")]
-        public HttpResponseData Run([HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequestData req,
+        [Function("InitializeDb")]
+        public HttpResponseData Run([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req,
             FunctionContext executionContext)
         {
+            _logger.LogInformation("Initialize CosmosDb with fake data.");
             _todoRepository.InitializeCosmosDbDataIfEmpty().Wait();
 
-            var logger = executionContext.GetLogger("GetAll");
-            logger.LogInformation("C# HTTP trigger function processed a request.");
-
-            //_logger.LogInformation("Loggin using injected logger.");
-
             var response = req.CreateResponse(HttpStatusCode.OK);
-            response.Headers.Add("Content-Type", "text/plain; charset=utf-8");
-
-            response.WriteString("Welcome to Azure Functions!");
-
             return response;
         }
     }
