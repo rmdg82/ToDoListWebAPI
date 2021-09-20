@@ -50,16 +50,16 @@ namespace ToDoListWebAPI
 
                 if (onlyUncompleted)
                 {
-                    todos = (await _todoRepository.GetTodos(onlyUncompleted)).ToList();
+                    todos = (await _todoRepository.GetByQueryAsync(getOnlyUncompleted: true)).ToList();
                 }
                 else
                 {
-                    todos = (await _todoRepository.GetTodos()).ToList();
+                    todos = (await _todoRepository.GetByQueryAsync()).ToList();
                 }
             }
             catch (FormatException ex)
             {
-                todos = (await _todoRepository.GetTodos()).ToList();
+                todos = (await _todoRepository.GetByQueryAsync()).ToList();
                 _logger.LogInformation(ex.Message);
             }
 
@@ -77,7 +77,7 @@ namespace ToDoListWebAPI
             try
             {
                 _logger.LogInformation($"Toggle completion for todo with id [{todoId}]");
-                await _todoRepository.ToggleCompletion(todoId);
+                await _todoRepository.ToggleCompletionAsync(todoId);
                 response = req.CreateResponse(HttpStatusCode.OK);
             }
             catch (KeyNotFoundException ex)
