@@ -9,7 +9,7 @@ namespace ToDoListWebAPI.Repositories
 {
     public interface ITodoRepository
     {
-        Task InitializeCosmosDbDataIfEmpty();
+        Task<bool> InitializeCosmosDbDataIfEmpty();
 
         Task<IEnumerable<Todo>> GetByQueryAsync(string sqlQuery);
 

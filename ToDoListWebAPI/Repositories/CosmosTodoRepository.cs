@@ -66,39 +66,42 @@ namespace ToDoListWebAPI.Repositories
             }
         }
 
-        public async Task InitializeCosmosDbDataIfEmpty()
+        public async Task<bool> InitializeCosmosDbDataIfEmpty()
         {
-            var todosToAdd = new List<Todo>
-            {
-                new Todo
-                {
-                    Id = Guid.NewGuid().ToString(),
-                    Text = "Wash the dishes",
-                    IsCompleted = false
-                },
-                new Todo
-                {
-                    Id = Guid.NewGuid().ToString(),
-                    Text = "Clean the house",
-                    IsCompleted = true
-                },
-                new Todo
-                {
-                    Id = Guid.NewGuid().ToString(),
-                    Text = "Mow the meadow",
-                    IsCompleted = false
-                }
-            };
-
             var todos = await GetByQueryAsync("SELECT * FROM c");
 
             if (todos is null || !todos.Any())
             {
+                var todosToAdd = new List<Todo>
+                {
+                    new Todo
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        Text = "Wash the dishes",
+                        IsCompleted = false
+                    },
+                    new Todo
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        Text = "Clean the house",
+                        IsCompleted = true
+                    },
+                    new Todo
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        Text = "Mow the meadow",
+                        IsCompleted = false
+                    }
+                };
+
                 foreach (var todo in todosToAdd)
                 {
                     await AddAsync(todo);
                 }
+                return true;
             }
+
+            return false;
         }
 
         public async Task ToggleCompletionAsync(string todosId)
@@ -116,6 +119,13 @@ namespace ToDoListWebAPI.Repositories
 
         public async Task UpdateAsync(string todoId, Todo todoUpdated)
         {
+            var todo = await GetByIdAsync(todoId);
+
+            if (todo is null)
+            {
+                throw new KeyNotFoundException();
+            }
+
             await _container.UpsertItemAsync(todoUpdated, new PartitionKey(todoId));
         }
     }

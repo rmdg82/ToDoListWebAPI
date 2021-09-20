@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<TargetFramework>net5.0</TargetFramework>
 		<AzureFunctionsVersion>v3</AzureFunctionsVersion>
@@ -10,6 +10,7 @@
 	  <None Remove="HttpTriggers\**" />
 	</ItemGroup>
 	<ItemGroup>
+		<PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="8.1.1" />
 		<PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.18.0" />
 		<PackageReference Include="Microsoft.Azure.Cosmos" Version="3.21.0" />
 		<PackageReference Include="Microsoft.Azure.Functions.Extensions" Version="1.1.0" />

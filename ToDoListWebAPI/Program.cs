@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Azure.Cosmos;
 using System;
+using System.Reflection;
 
 namespace ToDoListWebAPI
 {
@@ -25,6 +26,7 @@ namespace ToDoListWebAPI
                         options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
                         options.Converters.Add(new JsonStringEnumConverter());
                     });
+                    service.AddAutoMapper(Assembly.GetExecutingAssembly());
                 })
                 .Build();
 
