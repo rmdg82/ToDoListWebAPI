@@ -18,6 +18,7 @@ namespace ToDoListWebAPI.Repositories
         private readonly ILogger<TodoRepository> _logger;
         private Database _database;
         private Container _container;
+        private readonly string _partitionKey = "/id";
 
         public TodoRepository(ILogger<TodoRepository> logger)
         {
@@ -25,8 +26,7 @@ namespace ToDoListWebAPI.Repositories
 
             var cosmosConnectionString = Environment.GetEnvironmentVariable("CosmosConnectionString");
 
-            //_cosmosClient = new CosmosClient(cosmosConnectionString);
-            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            CosmosClientOptions clientOptions = new()
             {
                 SerializerOptions = new CosmosSerializationOptions()
                 {
@@ -36,7 +36,6 @@ namespace ToDoListWebAPI.Repositories
             _cosmosClient = new CosmosClient(cosmosConnectionString, clientOptions);
             CreateDatabaseAsync(_cosmosClient).Wait();
             CreateContainerAsync(_cosmosClient).Wait();
-            InitializeCosmosDbDataIfEmpty().Wait();
         }
 
         private async Task CreateDatabaseAsync(CosmosClient cosmosClient)
@@ -55,7 +54,7 @@ namespace ToDoListWebAPI.Repositories
         {
             var containerId = Environment.GetEnvironmentVariable("ContainerId");
             var containerResult = await cosmosClient.GetDatabase(_database.Id)
-                .CreateContainerIfNotExistsAsync(containerId, "/id");
+                .CreateContainerIfNotExistsAsync(containerId, _partitionKey);
 
             if (containerResult.StatusCode.Equals(HttpStatusCode.Created))
             {
@@ -69,14 +68,21 @@ namespace ToDoListWebAPI.Repositories
             throw new NotImplementedException();
         }
 
-        public Task DeleteTodo(Guid todoId)
+        public Task DeleteTodo(string todoId)
         {
             throw new NotImplementedException();
         }
 
-        public Task<IEnumerable<Todo>> GetTodos()
+        public async Task<IEnumerable<Todo>> GetTodos(bool getOnlyUncompleted = false)
         {
-            throw new NotImplementedException();
+            if (getOnlyUncompleted)
+            {
+                return await ExecuteQuery("SELECT * FROM c WHERE c.isCompleted = false");
+            }
+            else
+            {
+                return await ExecuteQuery("SELECT * FROM c");
+            }
         }
 
         public async Task InitializeCosmosDbDataIfEmpty()
@@ -103,19 +109,7 @@ namespace ToDoListWebAPI.Repositories
                 }
             };
 
-            var sqlQuery = "SELECT * FROM c";
-
-            QueryDefinition queryDefinition = new(sqlQuery);
-            FeedIterator<Todo> feedIterator = _container.GetItemQueryIterator<Todo>(queryDefinition);
-            var todos = new List<Todo>();
-            while (feedIterator.HasMoreResults)
-            {
-                var feedResponse = await feedIterator.ReadNextAsync();
-                foreach (Todo item in feedResponse)
-                {
-                    todos.Add(item);
-                }
-            }
+            List<Todo> todos = await ExecuteQuery("SELECT * FROM c");
 
             if (!todos.Any())
             {
@@ -133,12 +127,51 @@ namespace ToDoListWebAPI.Repositories
             }
         }
 
-        public Task ToggleCompletion(Guid todosId)
+        public async Task ToggleCompletion(string todosId)
+        {
+            ItemResponse<Todo> response = await _container.ReadItemAsync<Todo>(id: todosId, partitionKey: new PartitionKey(_partitionKey));
+            if (response.StatusCode.Equals(HttpStatusCode.NotFound))
+            {
+                _logger.LogError($"Not found element with id [{todosId}].");
+                throw new KeyNotFoundException($"Not found element with id [{todosId}].");
+            }
+
+            if (!response.StatusCode.Equals(HttpStatusCode.OK))
+            {
+                _logger.LogError($"Error: {response.StatusCode} - {response.Diagnostics}");
+                throw new Exception("Somenthig went wrong.");
+            }
+
+            Todo todo = response;
+            todo.IsCompleted = !todo.IsCompleted;
+
+            await _container.ReplaceItemAsync(item: todo, id: todosId, partitionKey: new PartitionKey(_partitionKey));
+        }
+
+        public Task UpdateTodo(string todoId, Todo todoUpdated)
         {
             throw new NotImplementedException();
         }
 
-        public Task UpdateTodo(Guid todoId, Todo todoUpdated)
+        private async Task<List<Todo>> ExecuteQuery(string sqlQuery)
+        {
+            var todos = new List<Todo>();
+            QueryDefinition queryDefinition = new(sqlQuery);
+            _logger.LogInformation($"Executing query: [{sqlQuery}]");
+
+            using (FeedIterator<Todo> feedIterator = _container.GetItemQueryIterator<Todo>(queryDefinition))
+            {
+                while (feedIterator.HasMoreResults)
+                {
+                    FeedResponse<Todo> response = await feedIterator.ReadNextAsync();
+                    todos.AddRange(response);
+                }
+            }
+
+            return todos;
+        }
+
+        public Task<Todo> GetById(string todoId)
         {
             throw new NotImplementedException();
         }

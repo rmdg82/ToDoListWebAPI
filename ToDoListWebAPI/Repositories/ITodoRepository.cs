@@ -11,14 +11,16 @@ namespace ToDoListWebAPI.Repositories
     {
         Task InitializeCosmosDbDataIfEmpty();
 
-        Task<IEnumerable<Todo>> GetTodos();
+        Task<IEnumerable<Todo>> GetTodos(bool getOnlyUncompleted = false);
 
-        Task ToggleCompletion(Guid todosId);
+        Task<Todo> GetById(string todoId);
+
+        Task ToggleCompletion(string todosId);
 
         Task AddTodo(Todo todo);
 
-        Task UpdateTodo(Guid todoId, Todo todoUpdated);
+        Task UpdateTodo(string todoId, Todo todoUpdated);
 
-        Task DeleteTodo(Guid todoId);
+        Task DeleteTodo(string todoId);
     }
 }

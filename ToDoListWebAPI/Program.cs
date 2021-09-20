@@ -17,7 +17,7 @@ namespace ToDoListWebAPI
                 .ConfigureFunctionsWorkerDefaults()
                 .ConfigureServices(service =>
                 {
-                    service.AddScoped<ITodoRepository, TodoRepository>();
+                    service.AddSingleton<ITodoRepository, TodoRepository>();
                     service.Configure<JsonSerializerOptions>(options =>
                     {
                         options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
