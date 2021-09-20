@@ -101,14 +101,22 @@ namespace ToDoListWebAPI.Repositories
             }
         }
 
-        public Task ToggleCompletionAsync(string todosId)
+        public async Task ToggleCompletionAsync(string todosId)
         {
-            throw new NotImplementedException();
+            var todo = await GetByIdAsync(todosId);
+            if (todo is null)
+            {
+                throw new Exception($"Element with id [{todosId}] not found.");
+            }
+
+            todo.IsCompleted = !todo.IsCompleted;
+
+            await UpdateAsync(todosId, todo);
         }
 
         public async Task UpdateAsync(string todoId, Todo todoUpdated)
         {
-            await _container.UpsertItemAsync<Todo>(todoUpdated, new PartitionKey(todoId));
+            await _container.UpsertItemAsync(todoUpdated, new PartitionKey(todoId));
         }
     }
 }
